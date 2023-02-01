@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+djangorestframework = "*"
+psycopg2 = "*"
+drf-spectacular = "*"
+django = "~=4.1"
+pandas = "*"
+numpy = "*"
+django-filter = "*"
+djangorestframework-gis = "*"
+httpx = "*"
+
+[dev-packages]
+isort = "*"
+black = "*"
+flake8 = "*"
+django-cprofile-middleware = "*"
+django-silk = "*"
+django-dynamic-fixture = "*"
+locust = "~=2.14"
+
+[requires]
+python_version = "3.11"

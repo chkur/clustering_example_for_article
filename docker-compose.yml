@@ -1,0 +1,35 @@
+version: "3.7"
+services:
+
+  db:
+    image: postgis/postgis:15-3.3
+    # command: postgres -c statement_timeout=10000
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=geo
+      - POSTGRES_PASSWORD=POSTGRES_PASSWORD
+      - POSTGRES_DB=clustering_example
+
+  web:
+    build:
+      &web-build
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DJANGO_ENV: development
+    volumes:
+      &web-volumes
+      - .:/usr/src/app/
+    restart: unless-stopped
+    expose:
+      - 8000
+    command: >
+      bash -c "python /usr/src/app/manage.py migrate && python /usr/src/app/manage.py runserver 0.0.0.0:8000"
+    ports:
+      - 8000:8000
+      - 8089:8089
+
+volumes:
+  postgres_data:
