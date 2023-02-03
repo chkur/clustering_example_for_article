@@ -69,7 +69,7 @@ def render_template(file, **kwargs):
 
 
 @events.request.add_listener
-def my_request_handler(
+def stats_request_handler(
     request_type,
     name,
     response_time,
@@ -102,7 +102,7 @@ def my_request_handler(
 class UserStatsWebUI(WebUI):
     def __init__(
         self,
-        environment: "UserStatsEnvironment",
+        environment: "UserStatsEnvironment",  # CHANGED!
         host: str,
         port: int,
         auth_credentials: Optional[str] = None,
@@ -173,6 +173,7 @@ class UserStatsWebUI(WebUI):
                     "Error: Locust Environment does not have any runner", 500
                 )
             self.update_template_args()
+            # Here we could replace template, if it wasn't hardcoded
             return render_template(LOCUST_INDEX_HTML, **self.template_args)
 
         @app.route("/swarm", methods=["POST"])
@@ -475,6 +476,7 @@ class UserStatsWebUI(WebUI):
             report = {
                 "stats": truncated_stats,
                 "errors": errors[:500],
+                #
                 "user_stats_headers": list(
                     environment.user_stats_headers.keys()
                 ),  # Keep order
@@ -568,6 +570,8 @@ class UserStatsWebUI(WebUI):
     def update_template_args(self):
         super().update_template_args()
         self.template_args["user_stats_headers"] = self.environment.user_stats_headers
+        # Here locust uses https://github.com/efeminella/jqote2-template-loader,
+        # we need pass formatted string
         self.template_args["js_user_stats_rows"] = "\n".join(
             [
                 f"<td><%= this.{name} || '-' %></td>"
@@ -577,6 +581,9 @@ class UserStatsWebUI(WebUI):
 
 
 class UserStatsEnvironment(Environment):
+    user_stats = None
+    user_stats_headers = None
+
     def __init__(
         self,
         *,
@@ -646,9 +653,6 @@ class WebsiteUser(FastHttpUser):
     connection_timeout = 10
     host = "http://localhost:8000"
 
-    def on_start(self):
-        pass
-
     def get_filter(self):
         min_lat_filter = uniform(min_lat, min_lat + 0.189)
         max_lat_filter = uniform(max_lat, max_lat - 0.189)
@@ -656,7 +660,6 @@ class WebsiteUser(FastHttpUser):
         max_lon_filter = uniform(max_lon, max_lon + 0.19)
         return f"min_lat={min_lat_filter}&max_lat={max_lat_filter}&min_lon={min_lon_filter}&max_lon={max_lon_filter}"
 
-    # @tag("fast", "slow", "js")
     @task
     def list_paginated(self):
         self.client.get("/api/vehicles/")
@@ -677,13 +680,9 @@ class WebsiteUser(FastHttpUser):
     @task
     def fast_map(self):
         filter_str = self.get_filter()
-        resp = self.client.get(
+        self.client.get(
             f"/api/vehicles/map_fast/?{filter_str}",
-            # context={"stats": self.environment.stats},
         )
-        # print(self.environment.stats.entries)
-        # print(dir(self.environment.stats))
-        # print(resp)
 
 
 def main(tags):
