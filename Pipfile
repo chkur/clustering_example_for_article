@@ -13,6 +13,7 @@ numpy = "*"
 django-filter = "*"
 djangorestframework-gis = "*"
 httpx = "*"
+gunicorn = "*"
 
 [dev-packages]
 isort = "*"

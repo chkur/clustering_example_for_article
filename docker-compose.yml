@@ -26,7 +26,8 @@ services:
     expose:
       - 8000
     command: >
-      bash -c "python /usr/src/app/manage.py migrate && python /usr/src/app/manage.py runserver 0.0.0.0:8000"
+      bash -c "python /home/app/web/manage.py migrate && python /home/app/web/manage.py collectstatic --no-input || true && gunicorn clustering_example.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300"
+    # bash -c "python /usr/src/app/manage.py migrate && python /usr/src/app/manage.py runserver 0.0.0.0:8000"
     ports:
       - 8000:8000
       - 8089:8089
