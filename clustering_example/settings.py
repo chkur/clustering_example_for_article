@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,6 +30,9 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
+LOCAL_APPS = [
+    "main",
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -42,8 +46,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_gis",
     "drf_spectacular",
-    "main",
-]
+    "django.contrib.postgres",
+] + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -82,6 +86,7 @@ WSGI_APPLICATION = "clustering_example.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
+        # "ENGINE": "psqlextra.backend",
         "NAME": "clustering_example",
         "USER": "geo",
         "PASSWORD": "POSTGRES_PASSWORD",
@@ -126,6 +131,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -155,3 +161,66 @@ if DEBUG:
         "silk.middleware.SilkyMiddleware",
     ]
     SILKY_PYTHON_PROFILER = True
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+    },
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "logs/example.log"),
+            "formatter": "verbose",
+            "maxBytes": 1024 * 1024 * 5,
+            "backupCount": 5,
+        },
+        "db_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "logs/db.log"),
+            "formatter": "verbose",
+            "maxBytes": 1024 * 1024 * 5,
+            "backupCount": 5,
+        },
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file", "console", "mail_admins"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": True,
+        },
+        "django.db.backends": {
+            "level": "DEBUG",
+            "handlers": ["db_file", "console"],
+        },
+    },
+}
+PARTITIONS_EXTRA_COUNT = 10

@@ -14,6 +14,9 @@ django-filter = "*"
 djangorestframework-gis = "*"
 httpx = "*"
 gunicorn = "*"
+django-model-utils = "*"
+django-postgres-extra = "*"
+faker = "*"
 
 [dev-packages]
 isort = "*"

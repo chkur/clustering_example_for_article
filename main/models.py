@@ -1,8 +1,17 @@
 from django.contrib.gis.db.models import PointField
 from django.db import models
 
+# from psqlextra.types import PostgresPartitioningMethod
+# from psqlextra.models import PostgresPartitionedModel
+from model_utils.managers import InheritanceManager
+
 
 class Vehicle(models.Model):
+    custom_partitioned = {
+        "column": "id",
+        "size": 100000,
+    }
+
     creation_date = models.DateField(
         db_index=True,
     )
@@ -98,3 +107,66 @@ class Vehicle(models.Model):
         null=True,
         blank=True,
     )
+    responsible = models.ForeignKey(
+        "Responsible",
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    objects = InheritanceManager()
+
+
+class CriminalVehicle(Vehicle):
+    custom_partitioned = {
+        "column": "vehicle_ptr_id",
+        "size": 100000,
+    }
+    top_secret = models.BooleanField(default=False)
+    police_data = models.JSONField(default=dict)
+
+
+class MistakeVehicle(Vehicle):
+    custom_partitioned = False
+
+    description = models.TextField()
+
+
+class RepeatedVehicle(Vehicle):
+    custom_partitioned = False
+
+    previous_event = models.OneToOneField(
+        "Vehicle",
+        related_name="next_event",
+        on_delete=models.PROTECT,
+    )
+
+
+class Person(models.Model):
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50)
+
+    class Meta:
+        abstract = True
+
+
+class Responsible(Person):
+    ...
+
+
+class Reporter(Person):
+    reports = models.ManyToManyField(
+        "Vehicle",
+        related_name="reporters",
+    )
+
+
+class Comment(models.Model):
+    custom_partitioned = {
+        "column": "vehicle_id",
+        "size": 100000,
+    }
+    vehicle = models.ForeignKey(
+        "Vehicle",
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(max_length=255)
+    text = models.TextField()
