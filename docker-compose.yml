@@ -1,9 +1,17 @@
 version: "3.7"
 services:
 
+  nginx:
+    image: nginx
+    volumes:
+      - ./templates:/etc/nginx/templates
+    ports:
+      - 80:80
+    environment:
+      - NGINX_TIMEOUT=600
+
   db:
     image: postgis/postgis:15-3.3
-    # command: postgres -c statement_timeout=10000
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
@@ -11,6 +19,8 @@ services:
       - POSTGRES_USER=geo
       - POSTGRES_PASSWORD=POSTGRES_PASSWORD
       - POSTGRES_DB=clustering_example
+      - POSTGRES_TIMEOUT=0
+    command: su -c "postgres -c statement_timeout=$${POSTGRES_TIMEOUT}" postgres
 
   web:
     build:
@@ -19,6 +29,10 @@ services:
       dockerfile: Dockerfile
       args:
         DJANGO_ENV: development
+    environment:
+      - HTTPX_TIMEOUT=600
+      - GUNICORN_TIMEOUT=600
+      - LONG_API_DURATION=30
     volumes:
       &web-volumes
       - .:/usr/src/app/
@@ -26,8 +40,7 @@ services:
     expose:
       - 8000
     command: >
-      bash -c "python /home/app/web/manage.py migrate && python /home/app/web/manage.py collectstatic --no-input || true && gunicorn clustering_example.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300"
-    # bash -c "python /usr/src/app/manage.py migrate && python /usr/src/app/manage.py runserver 0.0.0.0:8000"
+      bash -c "python /home/app/web/manage.py migrate && python /home/app/web/manage.py collectstatic --no-input || true && gunicorn clustering_example.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout $${GUNICORN_TIMEOUT}"
     ports:
       - 8000:8000
       - 8089:8089

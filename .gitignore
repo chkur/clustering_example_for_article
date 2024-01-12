@@ -23,3 +23,5 @@ celerybeat-schedule
 *.csv
 .env
 tags
+tags.lock
+logs

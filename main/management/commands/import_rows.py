@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand
 

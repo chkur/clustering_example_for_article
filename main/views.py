@@ -1,9 +1,14 @@
+import time
+import httpx
+
 from django.conf import settings
 from django.contrib.gis.geos import Point, Polygon
 from django.db import connection
 
+from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import (
@@ -15,7 +20,7 @@ from drf_spectacular.utils import (
 from silk.profiling.profiler import silk_profile
 
 from main.filters import VehicleFilter
-from main.models import Vehicle
+from main.models import Comment, Vehicle
 from main.serializers import (
     MapVehicleSerializer,
     VehicleForJSSerializer,
@@ -137,6 +142,50 @@ class BaseMapListView(ListAPIView):
         )
         return queryset
 
+    @extend_schema(
+        examples=[
+            OpenApiExample(
+                "200",
+                value={"data": 1},
+                request_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "200",
+                value={
+                    "name": "POST result",
+                    "text": "{vehicles_count} items in the queryset, external API response status is {api_status}",
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ]
+    )
+    def post(self, request):
+        """Imitate comment request for article 4"""
+
+        # 1st DB query
+        vehicle_id = Vehicle.objects.last().id
+        # API call
+        response = httpx.get(
+            settings.LONG_API_ENDPOINT,
+            timeout=settings.HTTPX_TIMEOUT,
+        )
+        api_status = response.status_code
+        # 2nd long DB query
+        vehicles_count = len(list(self.get_long_queryset()))
+        res = Comment.objects.create(
+            vehicle_id=vehicle_id,
+            name="POST result",
+            text=f"{vehicles_count} items in the queryset, external API response status is {api_status}",
+        )
+        return Response(
+            {
+                "name": res.name,
+                "text": res.text,
+            }
+        )
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -149,6 +198,9 @@ class VehicleNotPaginatedListView(BaseMapListView):
 
     serializer_class = VehicleForJSSerializer
     pagination_class = None
+
+    def get_long_queryset(self):
+        return self.get_queryset()
 
     @silk_profile(name="Not paginated list")
     def list(self, request, *args, **kwargs):
@@ -258,6 +310,9 @@ class VehicleMapListView(BaseMapListView):
                 data.append(data_item)
         return data
 
+    def get_long_queryset(self):
+        return self.clusterize(self.get_queryset())
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         result_data = self.clusterize(queryset)
@@ -332,3 +387,9 @@ class VehicleMapLargeCountListView(VehicleMapListView):
             FROM t1
             INNER JOIN t2 ON t1.cluster=t2.cluster
             """
+
+
+class LongAPIView(APIView):
+    def get(self, request):
+        time.sleep(settings.LONG_API_DURATION)
+        return Response({"success": True})

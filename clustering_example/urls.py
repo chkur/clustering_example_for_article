@@ -25,6 +25,7 @@ from drf_spectacular.views import (
 )
 
 from main.views import (
+    LongAPIView,
     VehicleListView,
     VehicleMapLargeCountListView,
     VehicleMapListView,
@@ -48,6 +49,10 @@ urlpatterns = [
     path(
         "api/vehicles/map_fast/",
         VehicleMapLargeCountListView.as_view(),
+    ),
+    path(
+        "api/long_wait/",
+        LongAPIView.as_view(),
     ),
     path(
         "api/doc/schema/",

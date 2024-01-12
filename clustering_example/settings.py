@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-96#@)d$h$%)h(-@2)v%)=u65x%nhd7!3zx7#1@u)-x8a3_5f-i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -224,3 +224,7 @@ LOGGING = {
     },
 }
 PARTITIONS_EXTRA_COUNT = 10
+
+HTTPX_TIMEOUT = int(os.environ.get("HTTPX_TIMEOUT", 0)) or None
+LONG_API_DURATION = int(os.environ.get("LONG_API_DURATION", 30))
+LONG_API_ENDPOINT = "http://nginx/api/long_wait/"
